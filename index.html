@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FRESCAN — Le scanner intelligent pour votre frigo</title>
+  <meta name="description" content="FRESCAN se fixe sur votre réfrigérateur, scanne vos produits et vous alerte avant qu'ils ne périment. Inventaire en temps réel, rappels anti-gaspillage et recettes intelligentes.">
+  <meta name="theme-color" content="#0B3A6E">
+  <script>
+    /* Langue choisie avant le premier affichage : ?lang= > choix mémorisé > langue du navigateur > français */
+    (function () {
+      var d = document.documentElement, L = 'fr';
+      d.classList.add('js');
+      try {
+        var q = location.search.match(/[?&]lang=(fr|en|ar)\b/);
+        var s = localStorage.getItem('frescan-lang');
+        var n = (navigator.language || '').slice(0, 2).toLowerCase();
+        L = q ? q[1] : (s || (n === 'ar' || n === 'en' ? n : 'fr'));
+      } catch (e) { /* stockage indisponible */ }
+      if (['fr', 'en', 'ar'].indexOf(L) < 0) L = 'fr';
+      d.lang = L;
+      d.dir = L === 'ar' ? 'rtl' : 'ltr';
+      if (L !== 'fr') {
+        d.classList.add('i18n-loading');
+        setTimeout(function () { d.classList.remove('i18n-loading'); }, 2500);
+      }
+    })();
+  </script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%230B3A6E' stroke-width='8'%3E%3Cpath d='M6 30V18Q6 6 18 6h12M70 6h12q12 0 12 12v12M6 70v12q0 12 12 12h12M70 94h12q12 0 12-12V70'/%3E%3C/g%3E%3Cpath d='M22 36h56l-5 44q-1 6-7 6H34q-6 0-7-6z' fill='%230B3A6E'/%3E%3Cpath d='M40 44v12q0 12 10 12t10-12V44' fill='none' stroke='%23fff' stroke-width='5'/%3E%3Crect x='0' y='48' width='100' height='4' fill='%236AB7F5'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@700;800&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- ============ SVG SPRITE (logo + icônes) ============ -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="g-scan" x1="0" x2="1">
+      <stop offset="0" stop-color="#6AB7F5" stop-opacity="0"/>
+      <stop offset=".25" stop-color="#6AB7F5"/>
+      <stop offset=".75" stop-color="#9ED2FF"/>
+      <stop offset="1" stop-color="#6AB7F5" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="f-glow" x="-20%" y="-300%" width="140%" height="700%"><feGaussianBlur stdDeviation="1.6"/></filter>
+
+    <symbol id="i-logo" viewBox="-10 0 120 100">
+      <g fill="none" stroke="currentColor" stroke-width="7">
+        <path d="M6 30V18Q6 6 18 6h12M70 6h12q12 0 12 12v12M6 70v12q0 12 12 12h12M70 94h12q12 0 12-12V70"/>
+      </g>
+      <ellipse cx="37" cy="30" rx="7.5" ry="12" fill="#3E4248"/>
+      <rect x="49" y="15" width="13" height="22" rx="2" fill="#3E4248" transform="rotate(28 55 26)"/>
+      <path d="M22 37h56l-5.2 43.5Q72 87 65.5 87h-31Q28 87 27.2 80.5z" fill="currentColor"/>
+      <path d="M40.5 46v10.5q0 11 9.5 11t9.5-11V46" fill="none" stroke="#fff" stroke-width="5.2"/>
+      <path d="M36.5 46h8M55.5 46h8" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+      <rect x="-10" y="49.2" width="120" height="3.4" fill="url(#g-scan)" filter="url(#f-glow)"/>
+      <rect x="-6" y="50.2" width="112" height="1.4" fill="url(#g-scan)"/>
+    </symbol>
+
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M3 12h18"/></symbol>
+    <symbol id="i-fridge" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 9h14M9 5v2M9 12v4"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6.5" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-return" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20.5" r="1.2"/><circle cx="17" cy="20.5" r="1.2"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4zM10 20.5a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-chef" viewBox="0 0 24 24"><path d="M7 14h10v6H7zM7 14a4 4 0 0 1-1-7.9A5 5 0 0 1 12 3a5 5 0 0 1 6 3.1A4 4 0 0 1 17 14M7 17h10"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 21h18M6 17v-5M11 17V7M16 17v-8M21 17V4"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-magnet" viewBox="0 0 24 24"><path d="M6 3v8a6 6 0 0 0 12 0V3h-4v8a2 2 0 0 1-4 0V3zM6 7h4M14 7h4"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15M5 19l7-7"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7zM12 22V12M21 7l-9 5-9-5"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+    <symbol id="i-explode" viewBox="0 0 24 24"><rect x="8" y="8" width="8" height="8" rx="1.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"/></symbol>
+    <symbol id="i-euro" viewBox="0 0 24 24"><path d="M18 6.5A7 7 0 0 0 7 12a7 7 0 0 0 11 5.5M4 10h9M4 14h9"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5zM5 19h14"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+
+    <symbol id="s-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="s-tiktok" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 3c.4 2.3 1.8 3.8 4 4v3.2c-1.5 0-2.9-.4-4-1.2v6.2A5.8 5.8 0 1 1 10.7 9.4v3.3a2.6 2.6 0 1 0 2.6 2.6V3z"/></symbol>
+    <symbol id="s-linkedin" viewBox="0 0 24 24"><path fill="currentColor" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.6 8.650 21 11.2 21 14.5V21h-4v-5.8c0-1.4-.03-3.2-1.95-3.2-1.95 0-2.25 1.5-2.25 3.1V21H9z"/></symbol>
+    <symbol id="s-youtube" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M22 8.2a3 3 0 0 0-2.1-2.1C18 5.6 12 5.6 12 5.6s-6 0-7.9.5A3 3 0 0 0 2 8.2 31 31 0 0 0 1.6 12a31 31 0 0 0 .4 3.8 3 3 0 0 0 2.1 2.1c1.9.5 7.9.5 7.9.5s6 0 7.9-.5a3 3 0 0 0 2.1-2.1c.4-1.2.4-3.8.4-3.8s0-2.6-.4-3.8zM10 15V9l5.2 3z"/></symbol>
+    <symbol id="s-x" viewBox="0 0 24 24"><path fill="currentColor" d="M17.8 3h3.1l-6.8 7.8L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></symbol>
+    <symbol id="s-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9s-2-.9-3.4-.9a5 5 0 0 0-4.2 2.6c-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.5 1.3-.1 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.5a10 10 0 0 0 1.4-2.8c-.1 0-2.7-1-2.7-4.1zM13.9 5c.7-.8 1.2-2 1-3.1-1 0-2.2.7-2.9 1.500-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.400z"/></symbol>
+    <symbol id="s-play" viewBox="0 0 24 24"><path fill="currentColor" d="M4 2.8v18.4c0 .5.5.8 1 .6l10.6-9.2L5 3.4c-.5-.3-1 0-1 .6zM16.8 13.6l-2.3-2 2.3-2 3.5 2c.6.4.6.9 0 1.3z" opacity=".9"/></symbol>
+  </defs>
+</svg>
+
+<a class="skip-link" href="#main" data-i18n="a11y.skip">Aller au contenu</a>
+
+<!-- ============ ANNONCE ============ -->
+<div class="announce">
+  <div class="container announce-inner">
+    <span class="announce-dot"></span>
+    <p data-i18n="ann.text"><strong>Précommandes ouvertes</strong> — prix de lancement <span data-price="899">899 MAD</span> au lieu de <span data-price="1099">1099 MAD</span>, livraison offerte.</p>
+    <a href="#boutique"><span data-i18n="ann.cta">J'en profite</span> <svg class="ic ic-dir"><use href="#i-arrow"/></svg></a>
+  </div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="header" id="header">
+  <div class="container header-inner">
+    <a class="brand" href="#accueil" aria-label="FRESCAN — accueil" data-i18n-attr="aria-label:a11y.home">
+      <svg class="brand-icon"><use href="#i-logo"/></svg>
+      <span class="brand-word">FRESCAN</span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="Navigation principale" data-i18n-attr="aria-label:a11y.nav">
+      <a href="#concept" data-i18n="nav.concept">Concept</a>
+      <a href="#simulation" data-i18n="nav.sim">Simulation</a>
+      <a href="#studio" data-i18n="nav.3d">Design 3D</a>
+      <a href="#appli" data-i18n="nav.app">L'Appli</a>
+      <a href="#mission" data-i18n="nav.mission">Mission</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      <div class="lang-switch lang-switch--menu" role="group" aria-label="Langue · Language · اللغة">
+        <svg class="ic"><use href="#i-globe"/></svg>
+        <button type="button" data-lang="fr" lang="fr">Français</button>
+        <button type="button" data-lang="en" lang="en">English</button>
+        <button type="button" data-lang="ar" lang="ar">العربية</button>
+      </div>
+      <a class="btn btn-primary nav-mobile-cta" href="#boutique" data-i18n="cta.buy">Acheter maintenant</a>
+    </nav>
+
+    <div class="header-actions">
+      <div class="lang-switch lang-switch--header" role="group" aria-label="Langue · Language · اللغة">
+        <button type="button" data-lang="fr" lang="fr" title="Français">FR</button>
+        <button type="button" data-lang="en" lang="en" title="English">EN</button>
+        <button type="button" data-lang="ar" lang="ar" title="العربية">عربي</button>
+      </div>
+      <button class="icon-btn cart-btn" id="cartOpen" aria-label="Ouvrir le panier" data-i18n-attr="aria-label:a11y.cart">
+        <svg class="ic"><use href="#i-cart"/></svg>
+        <span class="cart-count" id="cartCount" hidden>0</span>
+      </button>
+      <a class="btn btn-primary header-cta" href="#boutique" data-i18n="cta.buy">Acheter maintenant</a>
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu" data-i18n-attr="aria-label:a11y.menu" aria-expanded="false" aria-controls="nav">
+        <svg class="ic"><use href="#i-menu"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="scroll-progress" id="scrollProgress"></div>
+</header>
+
+<main id="main">
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="accueil">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-grid-lines"></div>
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+  </div>
+
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <a class="pill reveal" href="#boutique">
+        <span class="pill-tag" data-i18n="hero.new">Nouveau</span>
+        <span data-i18n="hero.pill">FRESCAN FS-01 · disponible en précommande</span>
+        <svg class="ic ic-dir"><use href="#i-arrow"/></svg>
+      </a>
+
+      <h1 class="hero-title reveal" data-delay="1">
+        <span data-i18n="hero.t1">Ne jetez plus.</span><br>
+        <span class="scan-word" data-i18n="hero.t2">Scannez.</span>
+      </h1>
+      <p class="hero-sub reveal" data-delay="2" data-i18n="hero.sub">Votre frigo devient intelligent.</p>
+      <p class="hero-lead reveal" data-delay="2" data-i18n="hero.lead">Le premier scanner intelligent de réfrigérateur qui suit vos aliments, prévient le gaspillage et vous inspire en cuisine.</p>
+
+      <div class="hero-cta reveal" data-delay="3">
+        <a class="btn btn-primary btn-lg" href="#boutique">
+          <span data-i18n="cta.buy">Acheter maintenant</span> <span class="btn-price" data-price="899">899 MAD</span>
+        </a>
+        <a class="btn btn-ghost btn-lg" href="#concept" data-i18n="hero.discover">Découvrir FRESCAN</a>
+      </div>
+
+      <ul class="hero-trust reveal" data-delay="4">
+        <li><svg class="ic"><use href="#i-shield"/></svg><span data-i18n="trust.warranty">Garantie 2 ans</span></li>
+        <li><svg class="ic"><use href="#i-truck"/></svg><span data-i18n="trust.shipping">Livraison gratuite</span></li>
+        <li><svg class="ic"><use href="#i-phone"/></svg><span data-i18n="trust.app">Appli iOS &amp; Android</span></li>
+      </ul>
+    </div>
+
+    <div class="hero-visual reveal" data-delay="2">
+      <div class="fridge-door" id="heroStage">
+        <div class="fridge-handle" aria-hidden="true"></div>
+        <div class="fridge-sheen" aria-hidden="true"></div>
+        <img class="hero-fallback" src="assets/img/vue-face.webp" alt="Le scanner FRESCAN affichant « Lait — expire dans 3 jours »" data-i18n-attr="alt:alt.heroFallback" width="2000" height="1263">
+        <canvas id="hero3d" aria-label="Modèle 3D animé du scanner FRESCAN scannant une brique de lait" data-i18n-attr="aria-label:alt.hero3d" role="img"></canvas>
+
+        <div class="float-chip chip-a">
+          <span class="chip-emoji">🥛</span>
+          <span><strong data-i18n="chip.milk">Lait 1 L</strong><small><i class="dot dot-green"></i><span data-i18n="chip.expires">Expire dans 3 jours</span></small></span>
+        </div>
+        <div class="float-chip chip-b">
+          <span class="chip-emoji chip-emoji--bell"><svg class="ic"><use href="#i-bell"/></svg></span>
+          <span><strong data-i18n="chip.notif">Vos fraises expirent demain</strong><small data-i18n="chip.notifIdea">Idée : smoothie express</small></span>
+        </div>
+        <div class="float-chip chip-c">
+          <span class="chip-emoji">🍳</span>
+          <span><strong data-i18n="chip.recipe">Recette trouvée</strong><small data-i18n="chip.recipeName">Omelette au comté · 15 min</small></span>
+        </div>
+      </div>
+      <p class="hero-hint"><svg class="ic"><use href="#i-cube"/></svg> <span data-i18n="hero.hint">Modèle 3D temps réel</span><span class="only-pointer" data-i18n="hero.hintMouse">&nbsp;— bougez la souris</span></p>
+    </div>
+  </div>
+
+  <div class="container">
+    <ul class="hero-metrics reveal">
+      <li><strong>4,8″</strong><span data-i18n="metric.screen">écran couleur IPS</span></li>
+      <li><strong data-i18n="metric.camV">8 Mp</strong><span data-i18n="metric.cam">caméra grand-angle</span></li>
+      <li><strong>4</strong><span data-i18n="metric.magnets">aimants néodyme, sans perçage</span></li>
+      <li><strong>USB-C</strong><span data-i18n="metric.battery">batterie Li-ion amovible</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ MARQUEE (contenu régénéré selon la langue) ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track" id="marqueeTrack">
+    <span>🥛 Lait <b>✓ scanné</b></span><span>🍅 Tomates <b>✓ scanné</b></span><span>🥚 Œufs <b>✓ scanné</b></span><span class="marquee-tag">Track it before you trash it.</span><span>🧀 Comté <b>✓ scanné</b></span><span>🥬 Salade <b>✓ scanné</b></span><span>🍓 Fraises <b>✓ scanné</b></span><span class="marquee-tag">Zéro oubli. Zéro gaspi.</span><span>🍗 Poulet <b>✓ scanné</b></span><span>🥕 Carottes <b>✓ scanné</b></span><span>🐟 Saumon <b>✓ scanné</b></span><span class="marquee-tag">Track it before you trash it.</span>
+    <span>🥛 Lait <b>✓ scanné</b></span><span>🍅 Tomates <b>✓ scanné</b></span><span>🥚 Œufs <b>✓ scanné</b></span><span class="marquee-tag">Track it before you trash it.</span><span>🧀 Comté <b>✓ scanné</b></span><span>🥬 Salade <b>✓ scanné</b></span><span>🍓 Fraises <b>✓ scanné</b></span><span class="marquee-tag">Zéro oubli. Zéro gaspi.</span><span>🍗 Poulet <b>✓ scanné</b></span><span>🥕 Carottes <b>✓ scanné</b></span><span>🐟 Saumon <b>✓ scanné</b></span><span class="marquee-tag">Track it before you trash it.</span>
+  </div>
+</div>
+
+<!-- ============ LE CONSTAT ============ -->
+<section class="section" id="probleme">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow" data-i18n="prob.eyebrow">Le constat</span>
+      <h2 data-i18n="prob.title">Un frigo plein. <em>Et pourtant, on jette.</em></h2>
+      <p data-i18n="prob.lead">Le gaspillage alimentaire ne se joue pas seulement dans les champs ou les supermarchés. Il se joue surtout chez nous, derrière la porte du réfrigérateur.</p>
+    </header>
+
+    <div class="stats-grid">
+      <article class="stat-card reveal">
+        <strong class="stat-num"><span data-count="1.05" data-decimals="2">0</span><small data-i18n="stat.u1"> Md t</small></strong>
+        <p data-i18n="stat.p1">de nourriture gaspillée dans le monde en une seule année.</p>
+      </article>
+      <article class="stat-card reveal" data-delay="1">
+        <strong class="stat-num"><span data-count="60">0</span><small> %</small></strong>
+        <p data-i18n="stat.p2">de ce gaspillage a lieu… à la maison.</p>
+      </article>
+      <article class="stat-card reveal" data-delay="2">
+        <strong class="stat-num"><span data-count="79">0</span><small data-i18n="stat.u3"> kg</small></strong>
+        <p data-i18n="stat.p3">jetés par habitant et par an dans les foyers.</p>
+      </article>
+      <article class="stat-card stat-card--accent reveal" data-delay="3">
+        <strong class="stat-num">8–10<small> %</small></strong>
+        <p data-i18n="stat.p4">des émissions mondiales de gaz à effet de serre liées aux pertes et au gaspillage.</p>
+      </article>
+    </div>
+    <p class="source reveal" data-i18n="prob.source">Source : Programme des Nations unies pour l'environnement (PNUE), <em>Food Waste Index Report 2024</em> — données 2022.</p>
+
+    <div class="versus reveal">
+      <article class="versus-card versus-card--before">
+        <h3><span class="versus-badge" data-i18n="vs.before">Sans FRESCAN</span></h3>
+        <ul>
+          <li><svg class="ic"><use href="#i-close"/></svg><span data-i18n="vs.b1">Le yaourt oublié au fond, découvert trois semaines trop tard</span></li>
+          <li><svg class="ic"><use href="#i-close"/></svg><span data-i18n="vs.b2">Un deuxième pot de crème acheté « au cas où »</span></li>
+          <li><svg class="ic"><use href="#i-close"/></svg><span data-i18n="vs.b3">« On mange quoi ce soir ? » devant un frigo plein</span></li>
+          <li><svg class="ic"><use href="#i-close"/></svg><span data-i18n="vs.b4">Des dates limites que personne ne lit</span></li>
+        </ul>
+      </article>
+      <div class="versus-mid" aria-hidden="true">
+        <svg class="brand-icon"><use href="#i-logo"/></svg>
+      </div>
+      <article class="versus-card versus-card--after">
+        <h3><span class="versus-badge" data-i18n="vs.after">Avec FRESCAN</span></h3>
+        <ul>
+          <li><svg class="ic"><use href="#i-check"/></svg><span data-i18n="vs.a1">Chaque produit suivi automatiquement, date comprise</span></li>
+          <li><svg class="ic"><use href="#i-check"/></svg><span data-i18n="vs.a2">L'inventaire consultable depuis le rayon du supermarché</span></li>
+          <li><svg class="ic"><use href="#i-check"/></svg><span data-i18n="vs.a3">Des recettes construites avec ce qu'il vous reste</span></li>
+          <li><svg class="ic"><use href="#i-check"/></svg><span data-i18n="vs.a4">Une alerte avant qu'il ne soit trop tard</span></li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMMENT ÇA MARCHE ============ -->
+<section class="section section--ice" id="concept">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow" data-i18n="how.eyebrow">Comment ça marche ?</span>
+      <h2 data-i18n="how.title">Trois gestes. <em>Zéro gaspillage.</em></h2>
+      <p data-i18n="how.lead">Pas d'appli à remplir à la main, pas de tableau à tenir. Vous rangez vos courses comme d'habitude — FRESCAN s'occupe du reste.</p>
+    </header>
+
+    <ol class="steps">
+      <li class="step reveal">
+        <div class="step-media">
+          <img src="assets/img/scan-lait.jpg" alt="Une main présente une brique de lait devant le scanner FRESCAN fixé sur un frigo" data-i18n-attr="alt:alt.step1" loading="lazy" width="382" height="250">
+          <span class="step-beam" aria-hidden="true"></span>
+        </div>
+        <div class="step-body">
+          <span class="step-num">01</span>
+          <h3><svg class="ic"><use href="#i-scan"/></svg><span data-i18n="how.s1t">Scannez</span></h3>
+          <p data-i18n="how.s1p">Fixez FRESCAN sur votre frigo. Appuyez sur IN, présentez le code-barres, la date ou le produit frais : la caméra 8 Mp grand-angle fait le reste.</p>
+        </div>
+      </li>
+      <li class="step reveal" data-delay="1">
+        <div class="step-media step-media--device">
+          <img src="assets/img/vue-face.webp" alt="Écran FRESCAN : produit reconnu, lait 1 L, expire dans 3 jours, enregistré" data-i18n-attr="alt:alt.step2" loading="lazy" width="2000" height="1263">
+        </div>
+        <div class="step-body">
+          <span class="step-num">02</span>
+          <h3><svg class="ic"><use href="#i-fridge"/></svg><span data-i18n="how.s2t">Rangez</span></h3>
+          <p data-i18n="how.s2p">L'appareil reconnaît le produit, lit sa date limite et l'enregistre automatiquement. Vous le ressortez du frigo ? Appuyez sur OUT, scannez-le, et il quitte l'inventaire.</p>
+        </div>
+      </li>
+      <li class="step reveal" data-delay="2">
+        <div class="step-media step-media--phone">
+          <div class="mini-phone">
+            <div class="mini-notch"></div>
+            <div class="mini-head"><strong data-i18n="ph.myFridge">Mon frigo</strong><span data-i18n="mini.count">12 produits</span></div>
+            <div class="mini-row"><span>🥛</span><b data-i18n="mini.r1">Lait 1 L</b><i class="tag tag-orange" data-days="3">3 j</i></div>
+            <div class="mini-row"><span>🍅</span><b data-i18n="mini.r2">Tomates ×6</b><i class="tag tag-green" data-days="5">5 j</i></div>
+            <div class="mini-row"><span>🍓</span><b data-i18n="mini.r3">Fraises</b><i class="tag tag-red" data-days="1">1 j</i></div>
+            <div class="mini-row"><span>🥚</span><b data-i18n="mini.r4">Œufs ×6</b><i class="tag tag-green" data-days="14">14 j</i></div>
+          </div>
+        </div>
+        <div class="step-body">
+          <span class="step-num">03</span>
+          <h3><svg class="ic"><use href="#i-phone"/></svg><span data-i18n="how.s3t">Gérez via l'appli</span></h3>
+          <p data-i18n="how.s3p">Consultez votre inventaire en direct sur votre smartphone, recevez vos rappels et trouvez quoi cuisiner — où que vous soyez.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="install reveal">
+      <div class="install-copy">
+        <span class="eyebrow" data-i18n="inst.eyebrow">Installation</span>
+        <h3 data-i18n="inst.title">Posé en 10 secondes. <br>Sans percer, sans coller.</h3>
+        <p data-i18n="inst.p">Quatre aimants néodyme et des patins silicone le maintiennent fermement sur la porte. Votre frigo n'est pas magnétique ? Une plaque adhésive est fournie dans la boîte.</p>
+        <ul class="install-list">
+          <li><svg class="ic"><use href="#i-magnet"/></svg><span data-i18n="inst.l1">4 aimants néodyme + patins silicone</span></li>
+          <li><svg class="ic"><use href="#i-bolt"/></svg><span data-i18n="inst.l2">Recharge USB-C, batterie amovible</span></li>
+          <li><svg class="ic"><use href="#i-wifi"/></svg><span data-i18n="inst.l3">Wi-Fi 2,4 GHz &amp; Bluetooth LE</span></li>
+        </ul>
+      </div>
+      <figure class="install-view">
+        <img src="assets/img/vue-arriere.webp" alt="Vue arrière de FRESCAN avec ses quatre aimants" data-i18n-attr="alt:alt.back" loading="lazy" width="2000" height="1263">
+        <figcaption data-i18n="inst.f1">Vue arrière · aimants</figcaption>
+      </figure>
+      <figure class="install-view">
+        <img src="assets/img/vue-profil.webp" alt="Vue de profil de FRESCAN avec le port USB-C" data-i18n-attr="alt:alt.side" loading="lazy" width="2000" height="1263">
+        <figcaption data-i18n="inst.f2">Profil · port USB-C</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SIMULATION ============ -->
+<section class="section section--sim" id="simulation">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow eyebrow--live"><i></i><span data-i18n="sim.eyebrow">Simulation interactive</span></span>
+      <h2 data-i18n="sim.title">Testez FRESCAN, <em>ici et maintenant.</em></h2>
+      <p data-i18n="sim.lead">Cliquez ou glissez un produit vers le scanner : bouton IN pour l'ajouter, bouton OUT pour le retirer. Faites avancer le temps, recevez les alertes et laissez le Chef intelligent cuisiner avec ce qu'il reste.</p>
+    </header>
+
+    <div class="sim reveal" id="sim">
+      <!-- Courses -->
+      <div class="sim-panel sim-basket">
+        <div class="sim-panel-head">
+          <h3><span class="when-in" data-i18n="sim.basket">🛒 Vos courses</span><span class="when-out" data-i18n="sim.basketOut">📤 Sortir un produit</span></h3>
+          <span class="sim-hint"><span class="only-pointer" data-i18n="sim.hintPointer">Cliquez ou glissez →</span><span class="only-touch" data-i18n="sim.hintTouch">Touchez un produit</span></span>
+        </div>
+        <div class="sim-products" id="simProducts"></div>
+      </div>
+
+      <!-- Frigo + appareil -->
+      <div class="sim-stage">
+        <div class="sim-fridge" id="simFridge">
+          <div class="sim-fridge-top"><span class="sim-fridge-handle"></span></div>
+          <div class="sim-fridge-main">
+            <!-- Intérieur : étagères remplies en direct -->
+            <div class="sim-interior" id="simInterior">
+              <span class="sim-light" aria-hidden="true"></span>
+              <div class="sim-shelf" data-zone="top"></div>
+              <div class="sim-shelf" data-zone="mid"></div>
+              <div class="sim-drawer" data-zone="drawer"></div>
+              <p class="sim-interior-hint" data-i18n="sim.shelfHint">Cliquez un produit pour le consommer</p>
+            </div>
+            <!-- Porte (s'ouvre en 3D) avec le scanner -->
+            <div class="sim-door" id="simDoor">
+              <div class="sim-door-front">
+                <span class="sim-fridge-handle sim-fridge-handle--long"></span>
+                <div class="sim-device" id="simDevice" aria-live="polite">
+                  <span class="sim-cam"></span>
+                  <div class="sim-screen" id="simScreen"></div>
+                  <span class="sim-led" id="simLed"></span>
+                  <span class="sim-logo"><svg><use href="#i-logo"/></svg>FRESCAN</span>
+                  <span class="sim-beam" id="simBeam"></span>
+                  <div class="sim-modes" role="group" aria-label="Mode du scanner" data-i18n-attr="aria-label:sim.modes">
+                    <button class="sim-mode sim-mode--in is-active" type="button" data-mode="in" aria-pressed="true" aria-label="IN : ajouter un produit" data-i18n-attr="aria-label:sim.inAria"><svg aria-hidden="true"><use href="#i-plus"/></svg>IN</button>
+                    <button class="sim-mode sim-mode--out" type="button" data-mode="out" aria-pressed="false" aria-label="OUT : retirer un produit" data-i18n-attr="aria-label:sim.outAria"><svg aria-hidden="true"><use href="#i-minus"/></svg>OUT</button>
+                  </div>
+                </div>
+                <div class="sim-magnet-note">
+                  <span class="when-in"><span class="only-pointer" data-i18n="sim.dropPointer">Déposez un produit ici</span><span class="only-touch" data-i18n="sim.dropTouch">Touchez un produit pour le scanner</span></span>
+                  <span class="when-out"><span class="only-pointer" data-i18n="sim.dropOutPointer">Présentez le produit à retirer</span><span class="only-touch" data-i18n="sim.dropOutTouch">Touchez le produit à retirer</span></span>
+                </div>
+              </div>
+              <div class="sim-door-back" aria-hidden="true"><span></span><span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="sim-floor" aria-hidden="true"></div>
+        <button class="sim-door-btn" id="simDoorBtn" type="button" aria-pressed="false"><svg class="ic"><use href="#i-eye"/></svg><span></span></button>
+      </div>
+
+      <!-- Téléphone -->
+      <div class="sim-phone-wrap">
+        <div class="phone phone--sim">
+          <div class="phone-island"></div>
+          <div class="phone-screen app" id="simApp"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-controls reveal">
+      <div class="sim-day">
+        <svg class="ic"><use href="#i-calendar"/></svg>
+        <div><small data-i18n="sim.label">Simulation</small><strong id="simDayLabel">Jour 1</strong></div>
+      </div>
+      <button class="btn btn-demo" id="simDemo" type="button"><svg class="ic"><use href="#i-sparkle"/></svg> <span></span></button>
+      <button class="btn btn-primary" id="simNextDay"><svg class="ic ic-dir"><use href="#i-play"/></svg> <span data-i18n="sim.next">Avancer d'un jour</span></button>
+      <button class="btn btn-ghost" id="simReset"><svg class="ic"><use href="#i-return"/></svg> <span data-i18n="sim.reset">Réinitialiser</span></button>
+      <dl class="sim-stats">
+        <div><dt data-i18n="sim.statTracked">Produits suivis</dt><dd id="statTracked">0</dd></div>
+        <div class="good"><dt data-i18n="sim.statSaved">Consommés à temps</dt><dd id="statSaved">0 MAD</dd></div>
+        <div class="bad"><dt data-i18n="sim.statWasted">Gaspillés</dt><dd id="statWasted">0 MAD</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STUDIO 3D ============ -->
+<section class="section section--dark" id="studio">
+  <div class="studio-glow" aria-hidden="true"></div>
+  <div class="container">
+    <header class="section-head section-head--light reveal">
+      <span class="eyebrow" data-i18n="st.eyebrow">Studio 3D</span>
+      <h2 data-i18n="st.title">Tournez-le. Ouvrez-le. <em>Explorez-le.</em></h2>
+      <p data-i18n="st.lead">Un objet pensé pour votre cuisine : façade en verre trempé, cadre aluminium, coque ABS. Faites-le pivoter, changez sa finition, ou ouvrez-le pour voir ce qu'il y a dedans.</p>
+    </header>
+
+    <div class="studio reveal">
+      <div class="studio-viewport" id="studioViewport">
+        <canvas id="studio3d" aria-label="Modèle 3D interactif du scanner FRESCAN" data-i18n-attr="aria-label:alt.studio3d" role="img"></canvas>
+        <div class="hotspots" id="hotspots"></div>
+        <div class="studio-loading" id="studioLoading"><span class="loader"></span><span data-i18n="st.loading">Chargement du modèle 3D…</span></div>
+        <div class="studio-tip"><svg class="ic"><use href="#i-cube"/></svg> <span data-i18n="st.tip">Glissez pour tourner · molette ou pincement pour zoomer</span></div>
+        <div class="view-bar" role="group" aria-label="Choisir une vue" data-i18n-attr="aria-label:st.views">
+          <button class="view-btn is-active" data-view="trois-quarts" data-i18n="st.v34">3/4</button>
+          <button class="view-btn" data-view="face" data-i18n="st.vFace">Face</button>
+          <button class="view-btn" data-view="dos" data-i18n="st.vBack">Dos</button>
+          <button class="view-btn" data-view="profil" data-i18n="st.vSide">Profil</button>
+        </div>
+      </div>
+
+      <aside class="studio-panel">
+        <div class="panel-block">
+          <h3 data-i18n="st.explodeTitle">Vue éclatée</h3>
+          <p data-i18n="st.explodeP">Séparez chaque couche de l'appareil.</p>
+          <button class="explode-btn" id="explodeBtn" aria-pressed="false">
+            <span class="explode-switch"><i></i></span>
+            <span class="explode-label">Ouvrir l'appareil</span>
+            <svg class="ic"><use href="#i-explode"/></svg>
+          </button>
+          <ol class="explode-legend" id="explodeLegend" hidden></ol>
+        </div>
+
+        <div class="panel-block">
+          <h3><span data-i18n="st.finish">Finition</span> <span class="finish-name" id="finishName">Blanc Glacier</span></h3>
+          <div class="swatches" role="radiogroup" aria-label="Finition" data-i18n-attr="aria-label:st.finish" data-sync="finish">
+            <button class="swatch is-active" role="radio" aria-checked="true" data-finish="glacier" style="--sw:#EEF1F5" aria-label="Blanc Glacier" data-i18n-attr="aria-label:finish.glacier"></button>
+            <button class="swatch" role="radio" aria-checked="false" data-finish="graphite" style="--sw:#2B3038" aria-label="Graphite" data-i18n-attr="aria-label:finish.graphite"></button>
+            <button class="swatch" role="radio" aria-checked="false" data-finish="nuit" style="--sw:#163A66" aria-label="Bleu Nuit" data-i18n-attr="aria-label:finish.nuit"></button>
+          </div>
+        </div>
+
+        <div class="panel-block">
+          <h3 data-i18n="st.specs">Fiche technique</h3>
+          <dl class="specs">
+            <div><dt data-i18n="spec.k1">Écran</dt><dd data-i18n="spec.v1">IPS couleur 4,8″, basse consommation</dd></div>
+            <div><dt data-i18n="spec.k2">Caméra</dt><dd data-i18n="spec.v2">8 Mp grand-angle, verre saphir</dd></div>
+            <div><dt data-i18n="spec.k3">Lecture</dt><dd data-i18n="spec.v3">Code-barres, dates (OCR), produits frais</dd></div>
+            <div><dt data-i18n="spec.k4">Connectivité</dt><dd data-i18n="spec.v4">Wi-Fi 2,4 GHz · Bluetooth LE</dd></div>
+            <div><dt data-i18n="spec.k5">Batterie</dt><dd data-i18n="spec.v5">Li-ion 3,7 V · 2 500 mAh, amovible</dd></div>
+            <div><dt data-i18n="spec.k6">Recharge</dt><dd data-i18n="spec.v6">USB-C · 5 V ⎓ 1 A</dd></div>
+            <div><dt data-i18n="spec.k7">Fixation</dt><dd data-i18n="spec.v7">4 aimants néodyme + patins silicone</dd></div>
+            <div><dt data-i18n="spec.k8">Matériaux</dt><dd data-i18n="spec.v8">Verre trempé, aluminium, ABS</dd></div>
+            <div><dt data-i18n="spec.k10">Boutons</dt><dd data-i18n="spec.v10">IN (ajouter) · OUT (retirer)</dd></div>
+            <div><dt data-i18n="spec.k9">Modèle</dt><dd>FS-01</dd></div>
+          </dl>
+        </div>
+      </aside>
+    </div>
+
+    <figure class="blueprint reveal">
+      <img src="assets/img/vue-eclatee.jpg" alt="Vue éclatée technique de FRESCAN : façade, caméra, cartes électroniques, batterie, coque arrière et aimants" data-i18n-attr="alt:alt.blueprint" loading="lazy" width="1600" height="835">
+      <figcaption><span class="mono" data-i18n="bp.tag">FS-01 · Planche technique</span> <span data-i18n="bp.text">Chaque composant est accessible : la batterie se remplace, la coque se recycle.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ L'APPLICATION ============ -->
+<section class="section" id="appli">
+  <div class="container">
+    <header class="section-head reveal">
+      <span class="eyebrow" data-i18n="app.eyebrow">L'application FRESCAN</span>
+      <h2 data-i18n="app.title">Votre frigo, <em>dans votre poche.</em></h2>
+      <p data-i18n="app.lead">Tout ce que FRESCAN scanne arrive instantanément sur votre téléphone — et sur celui de toute la famille. Inventaire, alertes, recettes, liste de courses : une seule appli, zéro saisie.</p>
+      <div class="store-badges">
+        <a class="store-badge" href="#appli" aria-label="Bientôt sur l'App Store" data-i18n-attr="aria-label:app.soonApple"><svg><use href="#s-apple"/></svg><span><small data-i18n="app.soon">Bientôt sur</small>App Store</span></a>
+        <a class="store-badge" href="#appli" aria-label="Bientôt sur Google Play" data-i18n-attr="aria-label:app.soonGoogle"><svg><use href="#s-play"/></svg><span><small data-i18n="app.soon">Bientôt sur</small>Google Play</span></a>
+      </div>
+    </header>
+
+    <div class="showcase reveal">
+      <ol class="feature-list" id="featureList">
+        <li><button class="feature is-active" data-screen="0"><span class="feature-ic"><svg class="ic"><use href="#i-home"/></svg></span><span class="feature-txt"><strong data-i18n="app.f1t">Tableau de bord</strong><small data-i18n="app.f1d">Tout votre frigo en un coup d'œil : fraîcheur, urgences, économies.</small></span><span class="feature-bar"><i></i></span></button></li>
+        <li><button class="feature" data-screen="1"><span class="feature-ic"><svg class="ic"><use href="#i-fridge"/></svg></span><span class="feature-txt"><strong data-i18n="app.f2t">Inventaire en temps réel</strong><small data-i18n="app.f2d">Quantités et dates à jour. Fini les doublons lors des courses.</small></span><span class="feature-bar"><i></i></span></button></li>
+        <li><button class="feature" data-screen="2"><span class="feature-ic"><svg class="ic"><use href="#i-bell"/></svg></span><span class="feature-txt"><strong data-i18n="app.f3t">Rappels anti-gaspillage</strong><small data-i18n="app.f3d">Une notification avant que les produits ne périment — avec une idée pour les utiliser.</small></span><span class="feature-bar"><i></i></span></button></li>
+        <li><button class="feature" data-screen="3"><span class="feature-ic"><svg class="ic"><use href="#i-chef"/></svg></span><span class="feature-txt"><strong data-i18n="app.f4t">Chef intelligent</strong><small data-i18n="app.f4d">« Que manger ce soir ? » Des recettes classées selon ce qui expire en premier, avec quantités et étapes.</small></span><span class="feature-bar"><i></i></span></button></li>
+        <li><button class="feature" data-screen="4"><span class="feature-ic"><svg class="ic"><use href="#i-list"/></svg></span><span class="feature-txt"><strong data-i18n="app.f5t">Liste de courses auto</strong><small data-i18n="app.f5d">Elle se remplit toute seule quand un produit est terminé. Partagée avec la famille.</small></span><span class="feature-bar"><i></i></span></button></li>
+        <li><button class="feature" data-screen="5"><span class="feature-ic"><svg class="ic"><use href="#i-chart"/></svg></span><span class="feature-txt"><strong data-i18n="app.f6t">Votre impact</strong><small data-i18n="app.f6d">Euros économisés, kilos sauvés, CO₂ évité : chaque geste compte.</small></span><span class="feature-bar"><i></i></span></button></li>
+        <li><button class="feature feature--plus" data-screen="6"><span class="feature-ic"><svg class="ic"><use href="#i-crown"/></svg></span><span class="feature-txt"><strong data-i18n="app.f7t">FRESCAN+ · Programmes santé</strong><small data-i18n="app.f7d">Fitness, diabète, allergies, famille : l'appli adapte recettes, portions et alertes à votre profil. Dès <span data-price="29">29 MAD</span>/mois, 14 jours gratuits.</small></span><span class="feature-bar"><i></i></span></button></li>
+      </ol>
+
+      <div class="phones-stage" id="phonesStage">
+        <div class="phones-glow" aria-hidden="true"></div>
+        <div class="phones-tilt" id="phonesTilt">
+
+        <!-- Écran 1 : Accueil -->
+        <div class="phone phone--show" data-index="0">
+          <div class="phone-island"></div>
+          <div class="phone-screen app">
+            <div class="app-status"><span>9:41</span><span class="app-status-ic"><svg><use href="#i-wifi"/></svg><i class="batt"></i></span></div>
+            <div class="app-body">
+              <div class="app-hello">
+                <div><small data-i18n="ph.hello">Bonjour 👋</small><h4 data-i18n="ph.yourFridge">Votre frigo</h4></div>
+                <span class="app-avatar">🏠</span>
+              </div>
+              <div class="app-score">
+                <div class="ring" style="--p:87"><span>87<small>%</small></span></div>
+                <div><strong data-i18n="ph.health">Frigo en forme</strong><small data-i18n="ph.healthSub">23 produits suivis<br>3 à consommer vite</small></div>
+              </div>
+              <div class="app-sec-title"><span data-i18n="ph.soon">À consommer bientôt</span> <a data-i18n="ph.seeAll">Tout voir</a></div>
+              <div class="app-cards">
+                <div class="app-card app-card--red"><span>🍓</span><b data-i18n="ph.strawberries">Fraises</b><i data-i18n="ph.today">Aujourd'hui</i></div>
+                <div class="app-card app-card--orange"><span>🥛</span><b data-i18n="ph.milk">Lait</b><i data-i18n="ph.2days">2 jours</i></div>
+                <div class="app-card app-card--orange"><span>🥬</span><b data-i18n="ph.salad">Salade</b><i data-i18n="ph.2days">2 jours</i></div>
+              </div>
+              <div class="app-sec-title" data-i18n="ph.thisMonth">Ce mois-ci</div>
+              <div class="app-kpis">
+                <div><strong data-price="380">380 MAD</strong><small data-i18n="ph.saved">économisés</small></div>
+                <div><strong data-i18n="ph.kg42">4,2 kg</strong><small data-i18n="ph.rescued">sauvés</small></div>
+              </div>
+              <div class="app-suggest"><span>🍳</span><div><b data-i18n="ph.tonight">Ce soir : omelette au comté</b><small data-i18n="ph.uses4">Utilise 4 produits de votre frigo</small></div><svg class="ic ic-dir"><use href="#i-arrow"/></svg></div>
+            </div>
+            <nav class="app-tabs"><span class="on"><svg><use href="#i-home"/></svg><small data-i18n="ph.tHome">Accueil</small></span><span><svg><use href="#i-fridge"/></svg><small data-i18n="ph.tFridge">Frigo</small></span><span><svg><use href="#i-chef"/></svg><small data-i18n="ph.tRecipes">Recettes</small></span><span><svg><use href="#i-list"/></svg><small data-i18n="ph.tShopping">Courses</small></span></nav>
+          </div>
+        </div>
+
+        <!-- Écran 2 : Inventaire -->
+        <div class="phone phone--show" data-index="1">
+          <div class="phone-island"></div>
+          <div class="phone-screen app">
+            <div class="app-status"><span>9:41</span><span class="app-status-ic"><svg><use href="#i-wifi"/></svg><i class="batt"></i></span></div>
+            <div class="app-body">
+              <div class="app-title-row"><h4 data-i18n="ph.myFridge">Mon frigo</h4><span class="app-count" data-i18n="ph.23products">23 produits</span></div>
+              <div class="app-search"><svg><use href="#i-search"/></svg><span data-i18n="ph.search">Rechercher un produit…</span></div>
+              <div class="app-chips"><span class="on" data-i18n="ph.cAll">Tout</span><span data-i18n="ph.cDairy">Laitiers</span><span data-i18n="ph.cVeg">Légumes</span><span data-i18n="ph.cMeat">Viandes</span></div>
+              <ul class="app-list">
+                <li><span class="app-emo">🍗</span><div><b data-i18n="inv.n1">Blancs de poulet</b><small data-i18n="inv.s1">×2 · ajouté il y a 3 j</small></div><i class="tag tag-red" data-days="1">1 j</i></li>
+                <li><span class="app-emo">🥛</span><div><b data-i18n="inv.n2">Lait demi-écrémé</b><small data-i18n="inv.s2">1 L · ajouté il y a 4 j</small></div><i class="tag tag-orange" data-days="2">2 j</i></li>
+                <li><span class="app-emo">🍅</span><div><b data-i18n="inv.n3">Tomates grappe</b><small data-i18n="inv.s3">×5 · ajouté hier</small></div><i class="tag tag-green" data-days="4">4 j</i></li>
+                <li><span class="app-emo">🥕</span><div><b data-i18n="inv.n4">Carottes</b><small data-i18n="inv.s4">800 g · ajouté hier</small></div><i class="tag tag-green" data-days="8">8 j</i></li>
+                <li><span class="app-emo">🧀</span><div><b data-i18n="inv.n5">Comté 18 mois</b><small data-i18n="inv.s5">150 g · ajouté il y a 2 j</small></div><i class="tag tag-green" data-days="9">9 j</i></li>
+                <li><span class="app-emo">🥚</span><div><b data-i18n="inv.n6">Œufs bio</b><small data-i18n="inv.s6">×4 · ajouté il y a 5 j</small></div><i class="tag tag-green" data-days="12">12 j</i></li>
+                <li><span class="app-emo">🧈</span><div><b data-i18n="inv.n7">Beurre doux</b><small data-i18n="inv.s7">250 g · ajouté il y a 6 j</small></div><i class="tag tag-green" data-days="26">26 j</i></li>
+              </ul>
+            </div>
+            <nav class="app-tabs"><span><svg><use href="#i-home"/></svg><small data-i18n="ph.tHome">Accueil</small></span><span class="on"><svg><use href="#i-fridge"/></svg><small data-i18n="ph.tFridge">Frigo</small></span><span><svg><use href="#i-chef"/></svg><small data-i18n="ph.tRecipes">Recettes</small></span><span><svg><use href="#i-list"/></svg><small data-i18n="ph.tShopping">Courses</small></span></nav>
+          </div>
+        </div>
+
+        <!-- Écran 3 : Rappels (écran verrouillé) -->
+        <div class="phone phone--show" data-index="2">
+          <div class="phone-island"></div>
+          <div class="phone-screen app app--lock">
+            <div class="app-status app-status--light"><span>5G</span><span class="app-status-ic"><svg><use href="#i-wifi"/></svg><i class="batt"></i></span></div>
+            <div class="lock-clock"><small data-i18n="ph.lockDate">vendredi 17 octobre</small><strong>18:42</strong></div>
+            <div class="lock-notifs">
+              <div class="notif"><div class="notif-head"><span class="notif-app"><svg><use href="#i-logo"/></svg></span>FRESCAN<em data-i18n="ph.now">maintenant</em></div><b data-i18n="ph.n1t">🍗 Poulet : à consommer aujourd'hui</b><p data-i18n="ph.n1p">Idée express : poêlée poulet-champignons, 15 min.</p></div>
+              <div class="notif"><div class="notif-head"><span class="notif-app"><svg><use href="#i-logo"/></svg></span>FRESCAN<em data-i18n="ph.2h">il y a 2 h</em></div><b data-i18n="ph.n2t">🥛 Votre lait expire dans 2 jours</b><p data-i18n="ph.n2p">Pensez à une béchamel ou à un smoothie.</p></div>
+              <div class="notif notif--soft"><div class="notif-head"><span class="notif-app"><svg><use href="#i-logo"/></svg></span>FRESCAN<em data-i18n="ph.yesterday">hier</em></div><b data-i18n="ph.n3t">🎉 0 produit jeté cette semaine</b><p data-i18n="ph.n3p">Bravo ! <span data-price="96">96 MAD</span> économisés.</p></div>
+            </div>
+            <div class="lock-bottom"><span></span></div>
+          </div>
+        </div>
+
+        <!-- Écran 4 : Chef intelligent -->
+        <div class="phone phone--show" data-index="3">
+          <div class="phone-island"></div>
+          <div class="phone-screen app">
+            <div class="app-status"><span>9:41</span><span class="app-status-ic"><svg><use href="#i-wifi"/></svg><i class="batt"></i></span></div>
+            <div class="app-body">
+              <div class="app-title-row"><h4 data-i18n="ph.whatTonight">Que manger ce soir ?</h4></div>
+              <div class="app-chips chef-filters"><span class="on" data-i18n="ph.fSmart">⚡ Anti-gaspi</span><span data-i18n="ph.fQuick">⏱ Rapide</span><span data-i18n="ph.fVeg">🌱 Végé</span></div>
+              <div class="recipe-hero">
+                <span class="recipe-badge" data-i18n="ph.inFridge">100 % dans votre frigo</span>
+                <span class="recipe-flag" data-i18n="ph.rescues">⚡ Sauve 2 produits qui expirent</span>
+                <span class="recipe-emoji">🍳</span>
+                <span class="recipe-ring" style="--p:100;--rc:var(--fresh-bright)"><b>100%</b></span>
+              </div>
+              <h5 class="recipe-title" data-i18n="ph.recipeTitle">Omelette au comté &amp; tomates</h5>
+              <div class="recipe-meta"><span data-i18n="ph.m1">⏱ 15 min</span><span data-i18n="ph.m2">👌 Facile</span><span data-i18n="ph.m3">👥 2 pers.</span></div>
+              <div class="recipe-why"><b data-i18n="ph.why">Pourquoi cette recette ?</b><ul>
+                <li class="urgent"><span>⚡</span><span data-i18n="ph.why1">Sauve de la poubelle : Lait (2 j), Tomates (demain)</span></li>
+                <li><span>💶</span><span data-i18n="ph.why2">Évite <span data-price="16.5" data-decimals="2">16.5 MAD</span> de gaspillage</span></li>
+              </ul></div>
+              <ul class="recipe-ings">
+                <li><i>✓</i><span data-i18n="ph.iEggs">Œufs</span> <small>×4</small></li>
+                <li><i>✓</i><span data-i18n="ph.iMilk">Lait</span> <small data-i18n="ph.cl5">5 cl</small><em data-i18n="ph.expSoon">expire bientôt</em></li>
+                <li><i>✓</i><span data-i18n="ph.iCheese">Comté</span> <small data-i18n="ph.g60">60 g</small></li>
+                <li><i>✓</i><span data-i18n="ph.iTomatoes">Tomates</span> <small>×2</small><em data-i18n="ph.expTomorrow">expire demain</em></li>
+              </ul>
+              <div class="app-btn" data-i18n="ph.cook">Cuisiner étape par étape</div>
+            </div>
+            <nav class="app-tabs"><span><svg><use href="#i-home"/></svg><small data-i18n="ph.tHome">Accueil</small></span><span><svg><use href="#i-fridge"/></svg><small data-i18n="ph.tFridge">Frigo</small></span><span class="on"><svg><use href="#i-chef"/></svg><small data-i18n="ph.tRecipes">Recettes</small></span><span><svg><use href="#i-list"/></svg><small data-i18n="ph.tShopping">Courses</small></span></nav>
+          </div>
+        </div>
+
+        <!-- Écran 5 : Liste de courses -->
+        <div class="phone phone--show" data-index="4">
+          <div class="phone-island"></div>
+          <div class="phone-screen app">
+            <div class="app-status"><span>9:41</span><span class="app-status-ic"><svg><use href="#i-wifi"/></svg><i class="batt"></i></span></div>
+            <div class="app-body">
+              <div class="app-title-row"><h4 data-i18n="ph.shopTitle">Liste de courses</h4><span class="app-count app-count--blue" data-i18n="ph.auto">Auto</span></div>
+              <p class="app-note"><svg><use href="#i-sparkle"/></svg><span data-i18n="ph.generated">Générée à partir de votre frigo</span></p>
+              <div class="app-sec-title" data-i18n="ph.finished">Terminé</div>
+              <ul class="check-list">
+                <li><i></i><div><b data-i18n="inv.n2">Lait demi-écrémé</b><small data-i18n="ph.sl1s">Fini hier</small></div></li>
+                <li class="done"><i>✓</i><div><b data-i18n="ph.sl2">Yaourts nature ×8</b><small data-i18n="ph.sl2s">Fini lundi</small></div></li>
+              </ul>
+              <div class="app-sec-title" data-i18n="ph.almost">Bientôt fini</div>
+              <ul class="check-list">
+                <li><i></i><div><b data-i18n="inv.n6">Œufs bio</b><small data-i18n="ph.sl3s">Il en reste 2</small></div></li>
+                <li><i></i><div><b data-i18n="inv.n7">Beurre doux</b><small data-i18n="ph.sl4s">Il en reste ¼</small></div></li>
+              </ul>
+              <div class="app-sec-title" data-i18n="ph.already">Déjà au frigo — inutile d'acheter</div>
+              <ul class="check-list check-list--muted">
+                <li><i>🧀</i><div><b data-i18n="inv.n5">Comté 18 mois</b><small data-i18n="ph.sl5s">150 g · encore 9 jours</small></div></li>
+              </ul>
+              <div class="app-btn app-btn--ghost"><svg><use href="#i-share"/></svg><span data-i18n="ph.share">Partager avec la famille</span></div>
+            </div>
+            <nav class="app-tabs"><span><svg><use href="#i-home"/></svg><small data-i18n="ph.tHome">Accueil</small></span><span><svg><use href="#i-fridge"/></svg><small data-i18n="ph.tFridge">Frigo</small></span><span><svg><use href="#i-chef"/></svg><small data-i18n="ph.tRecipes">Recettes</small></span><span class="on"><svg><use href="#i-list"/></svg><small data-i18n="ph.tShopping">Courses</small></span></nav>
+          </div>
+        </div>
+
+        <!-- Écran 6 : Impact -->
+        <div class="phone phone--show" data-index="5">
+          <div class="phone-island"></div>
+          <div class="phone-screen app">
+            <div class="app-status"><span>9:41</span><span class="app-status-ic"><svg><use href="#i-wifi"/></svg><i class="batt"></i></span></div>
+            <div class="app-body">
+              <div class="app-title-row"><h4 data-i18n="ph.impact">Votre impact</h4><span class="app-count">2026</span></div>
+              <div class="impact-hero">
+                <small data-i18n="ph.sinceJan">Économisé depuis janvier</small>
+                <strong data-price="1270">1 270 MAD</strong>
+                <span data-i18n="ph.vsLast">▲ 18 % vs le mois dernier</span>
+              </div>
+              <div class="app-sec-title" data-i18n="ph.kgPerMonth">Kilos sauvés par mois</div>
+              <div class="bars">
+                <div style="--h:38%"><i></i><small data-i18n="ph.mo1">Mai</small></div>
+                <div style="--h:52%"><i></i><small data-i18n="ph.mo2">Juin</small></div>
+                <div style="--h:47%"><i></i><small data-i18n="ph.mo3">Juil</small></div>
+                <div style="--h:66%"><i></i><small data-i18n="ph.mo4">Août</small></div>
+                <div style="--h:78%"><i></i><small data-i18n="ph.mo5">Sept</small></div>
+                <div class="on" style="--h:92%"><i></i><small data-i18n="ph.mo6">Oct</small></div>
+              </div>
+              <div class="impact-tiles">
+                <div><strong data-i18n="ph.t1v">18 kg</strong><small data-i18n="ph.t1">nourriture sauvée</small></div>
+                <div><strong data-i18n="ph.t2v">41 kg</strong><small data-i18n="ph.t2">CO₂e évités</small></div>
+                <div><strong>−62 %</strong><small data-i18n="ph.t3">de gaspillage</small></div>
+                <div><strong>14</strong><small data-i18n="ph.t4">recettes anti-gaspi</small></div>
+              </div>
+            </div>
+            <nav class="app-tabs"><span class="on"><svg><use href="#i-home"/></svg><small data-i18n="ph.tHome">Accueil</small></span><span><svg><use href="#i-fridge"/></svg><small data-i18n="ph.tFridge">Frigo</small></span><span><svg><use href="#i-chef"/></svg><small data-i18n="ph.tRecipes">Recettes</small></span><span><svg><use href="#i-list"/></svg><small data-i18n="ph.tShopping">Courses</small></span></nav>
+          </div>
+        </div>
+
+        <!-- Écran 7 : FRESCAN+ (abonnements) -->
+        <div class="phone phone--show" data-index="6">
+          <div class="phone-island"></div>
+          <div class="phone-screen app">
+            <div class="app-status"><span>9:41</span><span class="app-status-ic"><svg><use href="#i-wifi"/></svg><i class="batt"></i></span></div>
+            <div class="app-body">
+              <div class="plus-hero">
+                <span class="plus-crown">👑</span>
+                <h4>FRESCAN+</h4>
+                <p data-i18n="pl.sub">Des programmes santé construits à partir de votre frigo.</p>
+              </div>
+              <div class="plans">
+                <article class="plan-card is-best" style="--c1:#FFC94D;--c2:#0B3A6E">
+                  <span class="plan-best" data-i18n="pl.best">Meilleure offre</span>
+                  <div class="plan-head"><span class="plan-ic">👑</span><div class="plan-name"><b data-i18n="pl.premium">Premium</b><small data-i18n="pl.premiumTag">Tous les programmes</small></div><div class="plan-price"><b data-price="79">79 MAD</b><small data-i18n="pl.perMonth">/mois</small></div></div>
+                </article>
+                <article class="plan-card" style="--c1:#FF9A5A;--c2:#E0483C">
+                  <div class="plan-head"><span class="plan-ic">💪</span><div class="plan-name"><b data-i18n="pl.fitness">Fitness</b><small data-i18n="pl.fitnessTag">Macros &amp; protéines</small></div><div class="plan-price"><b data-price="39">39 MAD</b><small data-i18n="pl.perMonth">/mois</small></div></div>
+                </article>
+                <article class="plan-card" style="--c1:#4CC3F7;--c2:#0E6F8F">
+                  <div class="plan-head"><span class="plan-ic">🩺</span><div class="plan-name"><b data-i18n="pl.diabetes">Diabète</b><small data-i18n="pl.diabetesTag">Glucides &amp; IG bas</small></div><div class="plan-price"><b data-price="49">49 MAD</b><small data-i18n="pl.perMonth">/mois</small></div></div>
+                </article>
+                <article class="plan-card" style="--c1:#5BDB8C;--c2:#168A47">
+                  <div class="plan-head"><span class="plan-ic">🛡️</span><div class="plan-name"><b data-i18n="pl.allergy">Allergies</b><small data-i18n="pl.allergyTag">Gluten, lactose…</small></div><div class="plan-price"><b data-price="29">29 MAD</b><small data-i18n="pl.perMonth">/mois</small></div></div>
+                </article>
+                <article class="plan-card" style="--c1:#C98BFA;--c2:#7240D6">
+                  <div class="plan-head"><span class="plan-ic">👨‍👩‍👧</span><div class="plan-name"><b data-i18n="pl.family">Famille</b><small data-i18n="pl.familyTag">Portions &amp; enfants</small></div><div class="plan-price"><b data-price="39">39 MAD</b><small data-i18n="pl.perMonth">/mois</small></div></div>
+                </article>
+              </div>
+              <div class="app-btn pl-cta" data-i18n="pl.cta">Essai gratuit 14 jours</div>
+            </div>
+            <nav class="app-tabs app-tabs--5"><span><svg><use href="#i-home"/></svg><small data-i18n="ph.tHome">Accueil</small></span><span><svg><use href="#i-fridge"/></svg><small data-i18n="ph.tFridge">Frigo</small></span><span><svg><use href="#i-chef"/></svg><small data-i18n="ph.tRecipes">Recettes</small></span><span><svg><use href="#i-list"/></svg><small data-i18n="ph.tShopping">Courses</small></span><span class="on tab-plus"><svg><use href="#i-crown"/></svg><small data-i18n="pl.tab">Premium</small></span></nav>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+    <div class="try-live reveal">
+      <a class="btn btn-primary btn-lg" href="#simulation"><svg class="ic"><use href="#i-play"/></svg> <span data-i18n="app.tryLive">Essayer l'appli dans la simulation</span></a>
+    </div>
+    <p class="mockup-note reveal" data-i18n="app.note">Visuels simulés de l'application — interface susceptible d'évoluer avant la sortie.</p>
+  </div>
+</section>
+
+<!-- ============ CALCULATEUR ============ -->
+<section class="section section--tight" id="economies">
+  <div class="container">
+    <div class="calc reveal">
+      <div class="calc-scan" aria-hidden="true"></div>
+      <div class="calc-inputs">
+        <span class="eyebrow eyebrow--light" data-i18n="calc.eyebrow">Calculateur d'économies</span>
+        <h2 data-i18n="calc.title">Combien FRESCAN vous fait-il économiser&nbsp;?</h2>
+
+        <label class="calc-field">
+          <span><span data-i18n="calc.people">Personnes dans le foyer</span> <output id="calcPeopleOut">3</output></span>
+          <input type="range" id="calcPeople" min="1" max="6" step="1" value="3">
+        </label>
+
+        <div class="calc-field">
+          <span data-i18n="calc.waste">Aujourd'hui, vous jetez…</span>
+          <div class="seg" role="radiogroup" aria-label="Niveau de gaspillage" data-i18n-attr="aria-label:calc.wasteLevel" id="calcWaste">
+            <button role="radio" aria-checked="false" data-kg="18" data-i18n="calc.rarely">Rarement</button>
+            <button role="radio" aria-checked="true" class="is-active" data-kg="30" data-i18n="calc.sometimes">Parfois</button>
+            <button role="radio" aria-checked="false" data-kg="45" data-i18n="calc.often">Souvent</button>
+          </div>
+        </div>
+        <p class="calc-hyp" data-i18n="calc.hyp">Hypothèses : 30 kg jetés par personne et par an en moyenne en France (ADEME), valeur moyenne ≈ <span data-price="35">35 MAD</span>/kg, réduction estimée de 40 % avec FRESCAN. Estimation indicative.</p>
+      </div>
+
+      <div class="calc-results" aria-live="polite">
+        <div class="calc-big">
+          <small data-i18n="calc.estimated">Économies estimées</small>
+          <strong id="calcAmount"><span id="calcEuros">1 260</span> MAD<em>/an</em></strong>
+        </div>
+        <div class="calc-row">
+          <div><strong id="calcKg">36</strong><small data-i18n="calc.kgYear">kg de nourriture sauvés par an</small></div>
+          <div><strong id="calcMonths">7</strong><small data-i18n="calc.months">mois pour rentabiliser FRESCAN</small></div>
+        </div>
+        <a class="btn btn-light btn-lg" href="#boutique"><span data-i18n="calc.cta">Commencer à économiser</span> <svg class="ic ic-dir"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MISSION ============ -->
+<section class="section" id="mission">
+  <div class="container">
+    <div class="mission">
+      <div class="mission-copy reveal">
+        <span class="eyebrow" data-i18n="mis.eyebrow">Notre mission</span>
+        <h2 data-i18n="mis.title">Faire de chaque frigo <em>un allié contre le gaspillage.</em></h2>
+        <p class="mission-lead" data-i18n="mis.lead">Tout est parti d'un pot de yaourt. Oublié au fond du réfrigérateur, retrouvé trois semaines trop tard. Un détail ? Multiplié par des millions de foyers, c'est une montagne de nourriture, d'argent et d'énergie qui finit à la poubelle.</p>
+        <p data-i18n="mis.p">Nous avons créé FRESCAN pour que plus personne n'ait à se souvenir de tout. Un geste au moment de ranger ses courses, et la technologie prend le relais : elle se souvient, elle prévient, elle propose. Notre objectif est simple — aider les familles à manger mieux, à dépenser moins, et à jeter le moins possible.</p>
+        <blockquote class="mission-quote" data-i18n="mis.quote">« La nourriture la plus écologique, c'est celle qu'on ne jette pas. »<cite>— L'équipe FRESCAN</cite></blockquote>
+      </div>
+
+      <div class="mission-side">
+        <ol class="timeline reveal" data-delay="1">
+          <li><span class="tl-dot"></span><small data-i18n="mis.tl1s">L'étincelle</small><strong data-i18n="mis.tl1t">Un frigo plein… et une poubelle pleine.</strong><p data-i18n="mis.tl1p">Le constat qui a tout lancé, en famille, un dimanche soir.</p></li>
+          <li><span class="tl-dot"></span><small data-i18n="mis.tl2s">Le prototype</small><strong data-i18n="mis.tl2t">Une caméra, un écran, quatre aimants.</strong><p data-i18n="mis.tl2p">Des dizaines d'itérations pour un scan en un seul geste.</p></li>
+          <li class="is-now"><span class="tl-dot"></span><small data-i18n="mis.tl3s">Aujourd'hui</small><strong data-i18n="mis.tl3t">Les précommandes sont ouvertes.</strong><p data-i18n="mis.tl3p">Rejoignez les premiers foyers FRESCAN.</p></li>
+        </ol>
+
+        <div class="values reveal" data-delay="2">
+          <article><span class="value-ic"><svg class="ic"><use href="#i-leaf"/></svg></span><h3 data-i18n="mis.v1t">Anti-gaspi</h3><p data-i18n="mis.v1p">Moins de nourriture jetée, moins d'émissions.</p></article>
+          <article><span class="value-ic"><svg class="ic"><use href="#i-euro"/></svg></span><h3 data-i18n="mis.v2t">Économies</h3><p data-i18n="mis.v2p">Chaque produit consommé est un euro gagné.</p></article>
+          <article><span class="value-ic"><svg class="ic"><use href="#i-users"/></svg></span><h3 data-i18n="mis.v3t">Pour tous</h3><p data-i18n="mis.v3p">Simple pour les enfants comme pour les grands-parents.</p></article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BOUTIQUE ============ -->
+<section class="section section--ice" id="boutique">
+  <div class="container">
+    <div class="shop">
+      <div class="shop-visual reveal">
+        <div class="box-scene" id="boxScene" aria-label="Boîte du produit FRESCAN en 3D, glissez pour la faire tourner" data-i18n-attr="aria-label:alt.box" role="img">
+          <div class="box" id="box">
+            <div class="box-face box-front">
+              <div class="box-front-head"><svg class="brand-icon"><use href="#i-logo"/></svg><span class="brand-word">FRESCAN</span></div>
+              <div class="box-photo"><img src="assets/img/vue-face.webp" alt="" width="2000" height="1263"></div>
+              <p data-i18n="box.sub">Scanner intelligent pour réfrigérateur</p>
+            </div>
+            <div class="box-face box-back"><strong>Track it before<br>you trash it.</strong><ul><li data-i18n="box.l1">Scan code-barres &amp; dates</li><li data-i18n="box.l2">Inventaire en temps réel</li><li data-i18n="box.l3">Rappels anti-gaspillage</li><li data-i18n="box.l4">Recettes intelligentes</li></ul><span class="mono">FS-01</span></div>
+            <div class="box-face box-right"><span>FRESCAN</span></div>
+            <div class="box-face box-left"><span>Track it before you trash it.</span></div>
+            <div class="box-face box-top"><svg class="brand-icon"><use href="#i-logo"/></svg></div>
+            <div class="box-face box-bottom"></div>
+          </div>
+          <div class="box-shadow"></div>
+        </div>
+        <p class="box-hint" data-i18n="shop.drag">Glissez pour faire tourner la boîte</p>
+
+        <div class="in-box">
+          <h3 data-i18n="shop.inBox">Dans la boîte</h3>
+          <ul>
+            <li><span>📟</span><b data-i18n="shop.ib1">Scanner FRESCAN FS-01</b></li>
+            <li><span>🔌</span><b data-i18n="shop.ib2">Câble USB-C</b></li>
+            <li><span>🧲</span><b data-i18n="shop.ib3">Plaque adhésive pour frigo non magnétique</b></li>
+            <li><span>📘</span><b data-i18n="shop.ib4">Guide de démarrage rapide</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="shop-buy reveal" data-delay="1">
+        <span class="eyebrow" data-i18n="shop.eyebrow">Boutique</span>
+        <h2>FRESCAN <span class="mono-badge">FS-01</span></h2>
+        <p class="shop-lead" data-i18n="shop.lead">Le scanner intelligent pour réfrigérateur, avec l'application iOS &amp; Android incluse.</p>
+
+        <div class="price">
+          <strong id="priceNow">899 MAD</strong>
+          <s id="priceOld">1 099 MAD</s>
+          <span class="price-badge" id="priceSave">−18 %</span>
+        </div>
+        <p class="price-sub" data-i18n="shop.priceSub">Prix de lancement · TVA incluse · livraison offerte</p>
+
+        <fieldset class="opt">
+          <legend data-i18n="shop.pack">Pack</legend>
+          <div class="packs" role="radiogroup" id="packs">
+            <button class="pack is-active" role="radio" aria-checked="true" data-pack="solo"><strong data-i18n="pack.solo">Solo</strong><small data-i18n="pack.soloSub">1 scanner</small><b data-price="899">899 MAD</b></button>
+            <button class="pack" role="radio" aria-checked="false" data-pack="duo"><span class="pack-flag" data-i18n="pack.popular">Populaire</span><strong data-i18n="pack.duo">Duo</strong><small data-i18n="pack.duoSub">Frigo + congélateur</small><b data-price="1599">1 599 MAD</b></button>
+            <button class="pack" role="radio" aria-checked="false" data-pack="famille"><strong data-i18n="pack.famille">Famille</strong><small data-i18n="pack.familleSub">3 scanners</small><b data-price="2299">2 299 MAD</b></button>
+          </div>
+        </fieldset>
+
+        <fieldset class="opt">
+          <legend><span data-i18n="st.finish">Finition</span> · <span id="shopFinishName">Blanc Glacier</span></legend>
+          <div class="swatches swatches--light" role="radiogroup" aria-label="Finition" data-i18n-attr="aria-label:st.finish" data-sync="finish">
+            <button class="swatch is-active" role="radio" aria-checked="true" data-finish="glacier" style="--sw:#EEF1F5" aria-label="Blanc Glacier" data-i18n-attr="aria-label:finish.glacier"></button>
+            <button class="swatch" role="radio" aria-checked="false" data-finish="graphite" style="--sw:#2B3038" aria-label="Graphite" data-i18n-attr="aria-label:finish.graphite"></button>
+            <button class="swatch" role="radio" aria-checked="false" data-finish="nuit" style="--sw:#163A66" aria-label="Bleu Nuit" data-i18n-attr="aria-label:finish.nuit"></button>
+          </div>
+        </fieldset>
+
+        <div class="buy-row">
+          <div class="qty" aria-label="Quantité" data-i18n-attr="aria-label:shop.qty">
+            <button id="qtyMinus" aria-label="Diminuer la quantité" data-i18n-attr="aria-label:shop.qtyMinus"><svg class="ic"><use href="#i-minus"/></svg></button>
+            <output id="qtyVal">1</output>
+            <button id="qtyPlus" aria-label="Augmenter la quantité" data-i18n-attr="aria-label:shop.qtyPlus"><svg class="ic"><use href="#i-plus"/></svg></button>
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" id="addToCart"><svg class="ic"><use href="#i-cart"/></svg> <span data-i18n="shop.add">Ajouter au panier</span></button>
+        </div>
+        <button class="btn btn-outline btn-lg btn-block" id="buyNow" data-i18n="cta.buy">Acheter maintenant</button>
+
+        <ul class="reassure">
+          <li><svg class="ic"><use href="#i-shield"/></svg><span><strong data-i18n="re.1t">Garantie 2 ans</strong><small data-i18n="re.1s">Pièces et main-d'œuvre</small></span></li>
+          <li><svg class="ic"><use href="#i-truck"/></svg><span><strong data-i18n="re.2t">Livraison gratuite</strong><small data-i18n="re.2s">Partout au Maroc</small></span></li>
+          <li><svg class="ic"><use href="#i-lock"/></svg><span><strong data-i18n="re.3t">Paiement sécurisé</strong><small data-i18n="re.3s">Carte, PayPal, Apple Pay</small></span></li>
+          <li><svg class="ic"><use href="#i-return"/></svg><span><strong data-i18n="re.4t">Retours 30 jours</strong><small data-i18n="re.4s">Satisfait ou remboursé</small></span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section" id="faq">
+  <div class="container container--narrow">
+    <header class="section-head reveal">
+      <span class="eyebrow" data-i18n="faq.eyebrow">FAQ</span>
+      <h2 data-i18n="faq.title">Vos questions, <em>nos réponses.</em></h2>
+    </header>
+
+    <div class="faq reveal">
+      <details>
+        <summary><span data-i18n="faq.q1">Est-ce que FRESCAN fonctionne sur tous les réfrigérateurs ?</span><i></i></summary>
+        <p data-i18n="faq.a1">Oui. Ses quatre aimants néodyme se fixent sur toute porte métallique, et une plaque adhésive est fournie pour les frigos en inox non magnétique, en verre ou habillés (encastrables).</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q2">Comment FRESCAN reconnaît-il les fruits et légumes sans code-barres ?</span><i></i></summary>
+        <p data-i18n="faq.a2">La caméra 8 Mp grand-angle identifie les produits frais par reconnaissance visuelle. Si un produit n'est pas reconnu, vous le confirmez en un toucher sur l'écran ou dans l'appli — FRESCAN s'en souviendra la prochaine fois.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q3">Et les dates de péremption ?</span><i></i></summary>
+        <p data-i18n="faq.a3">FRESCAN lit les dates imprimées sur l'emballage (DLC et DDM). Pour les produits frais, il propose une durée de conservation moyenne que vous pouvez ajuster.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q10">Comment ajouter ou retirer un produit ?</span><i></i></summary>
+        <p data-i18n="faq.a10">Avec les deux boutons de l'appareil. Appuyez sur IN puis scannez pour ajouter un produit à l'inventaire. Appuyez sur OUT puis scannez pour le retirer : FRESCAN enlève en priorité l'unité la plus proche de sa date limite, et ajoute le produit à votre liste de courses s'il n'en reste plus.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q4">Faut-il recharger l'appareil souvent ?</span><i></i></summary>
+        <p data-i18n="faq.a4">FRESCAN embarque une batterie Li-ion de 2 500 mAh et un écran basse consommation qui se met en veille entre deux scans. Il se recharge en USB-C, et sa batterie est amovible.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q5">Toute la famille peut-elle utiliser l'application ?</span><i></i></summary>
+        <p data-i18n="faq.a5">Oui. Invitez les membres de votre foyer : chacun voit le même inventaire, reçoit les rappels et peut cocher la liste de courses en temps réel.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q6">Mes données sont-elles protégées ?</span><i></i></summary>
+        <p data-i18n="faq.a6">La caméra ne s'active qu'au moment du scan. Vos données d'inventaire sont chiffrées et ne sont jamais revendues. Vous pouvez exporter ou supprimer votre compte à tout moment, conformément au RGPD.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q7">Quand vais-je recevoir ma commande ?</span><i></i></summary>
+        <p data-i18n="faq.a7">Les précommandes sont expédiées par ordre d'arrivée. Vous recevez un e-mail de suivi dès l'envoi de votre colis, livré gratuitement partout au Maroc.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q8">Puis-je retourner FRESCAN s'il ne me convient pas ?</span><i></i></summary>
+        <p data-i18n="faq.a8">Bien sûr. Vous disposez de 30 jours pour nous le retourner et être intégralement remboursé. FRESCAN est par ailleurs garanti 2 ans.</p>
+      </details>
+      <details>
+        <summary><span data-i18n="faq.q9">Faut-il un abonnement pour utiliser FRESCAN ?</span><i></i></summary>
+        <p data-i18n="faq.a9">Non. L'appareil et l'application sont complets sans abonnement : inventaire, rappels, Chef anti-gaspi et liste de courses. FRESCAN+ est une option pour aller plus loin : programmes Fitness, Diabète, Allergies et Famille, dès <span data-price="29">29 MAD</span>/mois, avec 14 jours d'essai gratuit et résiliation à tout moment.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA FINAL ============ -->
+<section class="final-cta">
+  <div class="container final-cta-inner reveal">
+    <svg class="final-logo"><use href="#i-logo"/></svg>
+    <h2 class="tagline">Track it before <br class="br-sm">you trash it.</h2>
+    <p data-i18n="final.p">Rejoignez les premiers foyers FRESCAN et faites de votre frigo un allié.</p>
+    <div class="final-actions">
+      <a class="btn btn-light btn-lg" href="#boutique"><span data-i18n="cta.buy">Acheter maintenant</span>&nbsp;— <span data-price="899">899 MAD</span></a>
+      <a class="btn btn-ghost-light btn-lg" href="#simulation" data-i18n="final.replay">Rejouer la simulation</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="brand brand--light" href="#accueil"><svg class="brand-icon"><use href="#i-logo"/></svg><span class="brand-word">FRESCAN</span></a>
+        <p data-i18n="foot.p">Le scanner intelligent qui fait de votre frigo un allié contre le gaspillage.</p>
+        <div class="socials">
+          <a href="#" aria-label="Instagram"><svg><use href="#s-instagram"/></svg></a>
+          <a href="#" aria-label="TikTok"><svg><use href="#s-tiktok"/></svg></a>
+          <a href="#" aria-label="LinkedIn"><svg><use href="#s-linkedin"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg><use href="#s-youtube"/></svg></a>
+          <a href="#" aria-label="X"><svg><use href="#s-x"/></svg></a>
+        </div>
+      </div>
+
+      <div class="footer-cols">
+        <div><h4 data-i18n="foot.product">Produit</h4><a href="#concept" data-i18n="foot.how">Comment ça marche</a><a href="#studio" data-i18n="nav.3d">Design 3D</a><a href="#appli" data-i18n="foot.app">L'application</a><a href="#boutique" data-i18n="foot.buy">Acheter</a></div>
+        <div><h4 data-i18n="foot.company">Entreprise</h4><a href="#mission" data-i18n="foot.mission">Notre mission</a><a href="#economies" data-i18n="foot.calc">Calculateur</a><a href="#faq" data-i18n="nav.faq">FAQ</a><a href="mailto:contact@frescan.fr" data-i18n="foot.contact">Contact</a></div>
+        <div><h4 data-i18n="foot.legal">Légal</h4><a href="#" data-i18n="foot.l1">Mentions légales</a><a href="#" data-i18n="foot.l2">CGV</a><a href="#" data-i18n="foot.l3">Confidentialité</a><a href="#" data-i18n="foot.l4">Cookies</a></div>
+      </div>
+
+      <form class="newsletter" id="newsletter" novalidate>
+        <h4 data-i18n="foot.nlTitle">Astuces anti-gaspi</h4>
+        <p data-i18n="foot.nlP">Inscrivez-vous pour recevoir des astuces anti-gaspillage et les nouveautés FRESCAN.</p>
+        <div class="newsletter-field">
+          <svg class="ic"><use href="#i-mail"/></svg>
+          <input type="email" name="email" placeholder="votre@email.fr" aria-label="Adresse e-mail" data-i18n-attr="placeholder:form.email;aria-label:form.emailLabel" required>
+          <button class="btn btn-light" type="submit" data-i18n="foot.nlBtn">S'inscrire</button>
+        </div>
+        <small class="newsletter-msg" id="newsletterMsg" aria-live="polite"></small>
+      </form>
+    </div>
+
+    <div class="footer-bottom">
+      <span data-i18n="foot.rights">© 2026 FRESCAN. Tous droits réservés.</span>
+      <span class="mono">Track it before you trash it.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ PANIER ============ -->
+<div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+<aside class="drawer" id="cartDrawer" aria-label="Panier" data-i18n-attr="aria-label:cart.label" aria-hidden="true">
+  <div class="drawer-head">
+    <h3 data-i18n="cart.title">Votre panier</h3>
+    <button class="icon-btn" id="cartClose" aria-label="Fermer le panier" data-i18n-attr="aria-label:cart.close"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="drawer-ship" id="drawerShip"><svg class="ic"><use href="#i-truck"/></svg> <span data-i18n="cart.ship">Livraison offerte sur toutes les commandes</span></div>
+  <div class="drawer-items" id="cartItems"></div>
+  <div class="drawer-foot">
+    <div class="drawer-line"><span data-i18n="cart.subtotal">Sous-total</span><span id="cartSubtotal">0 MAD</span></div>
+    <div class="drawer-line"><span data-i18n="cart.shipping">Livraison</span><span class="free" data-i18n="cart.free">Offerte</span></div>
+    <div class="drawer-line drawer-total"><span data-i18n="cart.total">Total TTC</span><span id="cartTotal">0 MAD</span></div>
+    <button class="btn btn-primary btn-lg btn-block" id="checkoutBtn"><svg class="ic"><use href="#i-lock"/></svg> <span data-i18n="cart.checkout">Passer la commande</span></button>
+    <p class="drawer-secure" data-i18n="cart.secure">Paiement 100 % sécurisé · Garantie 2 ans · Retours 30 jours</p>
+  </div>
+</aside>
+
+<!-- ============ MODALE COMMANDE ============ -->
+<div class="modal" id="checkoutModal" hidden role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+  <div class="modal-card">
+    <button class="icon-btn modal-close" id="modalClose" aria-label="Fermer" data-i18n-attr="aria-label:a11y.close"><svg class="ic"><use href="#i-close"/></svg></button>
+    <svg class="modal-logo"><use href="#i-logo"/></svg>
+    <h3 id="checkoutTitle" data-i18n="modal.title">Encore une petite étape</h3>
+    <p data-i18n="modal.p">Le paiement en ligne ouvre très bientôt. Laissez votre e-mail : votre panier (<strong id="modalTotal">0 MAD</strong>) est réservé et vous serez prévenu·e en priorité, au prix de lancement.</p>
+    <form id="checkoutForm" class="modal-form" novalidate>
+      <input type="email" placeholder="votre@email.fr" aria-label="Adresse e-mail" data-i18n-attr="placeholder:form.email;aria-label:form.emailLabel" required>
+      <button class="btn btn-primary" type="submit" data-i18n="modal.btn">Réserver mon FRESCAN</button>
+    </form>
+    <small class="modal-msg" id="modalMsg" aria-live="polite"></small>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/environments/RoomEnvironment.js" defer></script>
+<script src="assets/js/i18n.js" defer></script>
+<script src="assets/js/main.js" defer></script>
+<script src="assets/js/simulation.js" defer></script>
+<script src="assets/js/device3d.js" defer></script>
+</body>
+</html>
