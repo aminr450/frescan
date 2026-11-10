@@ -452,6 +452,9 @@ h2 em, .hero-title em {
   opacity: 0; pointer-events: none; z-index: 3; transition: opacity .25s; filter: blur(.3px);
 }
 .sim-device.is-scanning .sim-beam { opacity: 1; animation: beamPulse .45s ease-in-out infinite alternate; }
+.hero-tagline { margin: 10px 0 14px; font-family: var(--mono); font-size: clamp(16px, 1.6vw, 21px); font-weight: 500; letter-spacing: .04em; color: var(--blue, #1764B4); direction: ltr; }
+[dir="rtl"] .hero-tagline { text-align: right; }
+
 .sim-device.is-out-done { box-shadow: 0 0 0 3px #FF9A5A, 0 0 0 10px rgba(255, 154, 90, .24), 0 22px 34px -14px rgba(10, 26, 47, .55); }
 
 /* Boutons physiques IN / OUT (bandeau bas de la façade, jamais inversés en arabe) */
